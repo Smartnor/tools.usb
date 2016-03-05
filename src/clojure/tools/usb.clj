@@ -63,22 +63,28 @@
     {:err-chan err-chan, :event-chan event-chan}))
 
 (defn unsigned-bytes->bytes
-  [ub]
+  [unsigned-bytes-list]
   (byte-array (map #(byte (if (bit-test % 7)
                             (dec (- % 0xFF))
                             %))
-                   ub)))
+                   unsigned-bytes-list)))
 
 (defn unsigned-bytes<-bytes
-  [b]
+  [bytes-list]
   (map #(if (bit-test % 7)
           (+ (inc (int %)) 0xFF)
           (int %))
-       b))
+       bytes-list))
 
-(defn bytes->hex-string 
-  [b]
-  (apply str (interpose " " (map #(format "0x%02X" %)(unsigned-bytes<-bytes b)))))
+(defn bytes->hex-string-list
+  [bytes-list]
+  (map #(format "0x%02X" %)
+       (unsigned-bytes<-bytes bytes-list)))
+
+(defn bytes<-hex-string-list
+  [hex-list]
+  (unsigned-bytes->bytes (map #(read-string %)
+                              hex-list)))
 
 (defn dump
   []
