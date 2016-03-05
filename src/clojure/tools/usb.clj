@@ -26,13 +26,13 @@
 (extend-protocol Describable
   javax.usb.UsbDevice
   (describe [o] (.getUsbDeviceDescriptor o))
-
+  
   javax.usb.UsbConfiguration
   (describe [o] (.getUsbConfigurationDescriptor o))
-
+  
   javax.usb.UsbInterface
   (describe [o] (.getUsbInterfaceDescriptor o))
-
+  
   javax.usb.UsbEndpoint
   (describe [o] (.getUsbEndpointDescriptor o)))
 
@@ -47,7 +47,8 @@
 
 (defn pipe 
   [iface endpoint-num]
-  (.getUsbPipe (.getUsbEndpoint iface (unchecked-byte endpoint-num))))
+  (.getUsbPipe (.getUsbEndpoint iface
+                                (unchecked-byte endpoint-num))))
 
 (defn listen 
   [in-pipe]
@@ -59,7 +60,25 @@
                    (dataEventOccurred [event]
                                       (>!! event-chan (.getData event))))]
     (.addUsbPipeListener in-pipe listener)
-    event-chan))
+    {:err-chan err-chan, :event-chan event-chan}))
+
+(defn unsigned-bytes->bytes
+  [ub]
+  (byte-array (map #(byte (if (bit-test % 7)
+                            (dec (- % 0xFF))
+                            %))
+                   ub)))
+
+(defn unsigned-bytes<-bytes
+  [b]
+  (map #(if (bit-test % 7)
+          (+ (inc (int %)) 0xFF)
+          (int %))
+       b))
+
+(defn bytes->hex-string 
+  [b]
+  (apply str (interpose " " (map #(format "0x%02X" %)(unsigned-bytes<-bytes b)))))
 
 (defn dump
   []
